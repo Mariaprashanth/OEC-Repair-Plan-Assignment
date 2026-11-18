@@ -1,8 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿
+using Microsoft.EntityFrameworkCore;
 using RL.Data.DataModels;
 using RL.Data.DataModels.Common;
 
 namespace RL.Data;
+
 public class RLContext : DbContext
 {
     public DbSet<Plan> Plans { get; set; }
@@ -10,22 +12,66 @@ public class RLContext : DbContext
     public DbSet<Procedure> Procedures { get; set; }
     public DbSet<User> Users { get; set; }
 
-    public RLContext() { }
-    public RLContext(DbContextOptions<RLContext> options) : base(options) { }
+    // New DbSet for assigned users
+    public DbSet<PlanProcedureUser> PlanProcedureUsers { get; set; }
 
-    protected override async void OnModelCreating(ModelBuilder builder)
+    public RLContext() { }
+
+    public RLContext(DbContextOptions<RLContext> options)
+        : base(options) { }
+
+    protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
+        // PlanProcedure configuration
         builder.Entity<PlanProcedure>(typeBuilder =>
         {
-            typeBuilder.HasKey(pp => new { pp.PlanId, pp.ProcedureId });
-            typeBuilder.HasOne(pp => pp.Plan).WithMany(p => p.PlanProcedures);
-            typeBuilder.HasOne(pp => pp.Procedure).WithMany();
+            typeBuilder.HasKey(pp => new
+            {
+                pp.PlanId,
+                pp.ProcedureId
+            });
+
+            typeBuilder.HasOne(pp => pp.Plan)
+                .WithMany(p => p.PlanProcedures)
+                .HasForeignKey(pp => pp.PlanId);
+
+            typeBuilder.HasOne(pp => pp.Procedure)
+                .WithMany()
+                .HasForeignKey(pp => pp.ProcedureId);
         });
 
-        //Add procedure Seed Data
-        var seedData = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "ProcedureSeedData.csv"));
+        // PlanProcedureUser configuration
+        builder.Entity<PlanProcedureUser>(typeBuilder =>
+        {
+            // Composite Primary Key
+            typeBuilder.HasKey(pu => new
+            {
+                pu.PlanId,
+                pu.ProcedureId,
+                pu.UserId
+            });
+
+            // Relationship with PlanProcedure
+            typeBuilder.HasOne(pu => pu.PlanProcedure)
+                .WithMany()
+                .HasForeignKey(pu => new
+                {
+                    pu.PlanId,
+                    pu.ProcedureId
+                });
+
+            // Relationship with User
+            typeBuilder.HasOne(pu => pu.User)
+                .WithMany()
+                .HasForeignKey(pu => pu.UserId);
+        });
+
+        // Add Procedure Seed Data
+        var seedData = File.ReadAllLines(
+            Path.Combine(AppContext.BaseDirectory, "ProcedureSeedData.csv"));
+
         builder.Entity<Procedure>(p =>
         {
             var seedProcedures = seedData.Select((sd, i) => new Procedure
@@ -33,59 +79,70 @@ public class RLContext : DbContext
                 ProcedureId = i + 1,
                 ProcedureTitle = sd
             });
+
             p.HasData(seedProcedures);
         });
 
-        //Add User Seed Data
+        // Add User Seed Data
         builder.Entity<User>(u =>
         {
-            u.HasData(new List<User> {
-                new User {
+            u.HasData(new List<User>
+            {
+                new User
+                {
                     UserId = 1,
                     Name = "Nick Morrison",
-                    CreateDate = new DateTime(1999,12,13),
-                    UpdateDate = new DateTime(1999,12,13)
+                    CreateDate = new DateTime(1999, 12, 13),
+                    UpdateDate = new DateTime(1999, 12, 13)
                 },
-                new User {
+                new User
+                {
                     UserId = 2,
                     Name = "Scott Cassidy",
-                    CreateDate = new DateTime(1999,12,13),
-                    UpdateDate = new DateTime(1999,12,13)
+                    CreateDate = new DateTime(1999, 12, 13),
+                    UpdateDate = new DateTime(1999, 12, 13)
                 },
-                new User {
+                new User
+                {
                     UserId = 3,
                     Name = "Tony Bidner",
-                    CreateDate = new DateTime(1999,12,13),
-                    UpdateDate = new DateTime(1999,12,13)
+                    CreateDate = new DateTime(1999, 12, 13),
+                    UpdateDate = new DateTime(1999, 12, 13)
                 },
-                new User {
+                new User
+                {
                     UserId = 4,
                     Name = "Patryk Skwarko",
-                    CreateDate = new DateTime(1999,12,13),
-                    UpdateDate = new DateTime(1999,12,13)
+                    CreateDate = new DateTime(1999, 12, 13),
+                    UpdateDate = new DateTime(1999, 12, 13)
                 }
             });
         });
     }
 
-
     #region TimeStamps
+
     public override int SaveChanges()
     {
         AddTimestamps();
         return base.SaveChanges();
     }
 
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    public override Task<int> SaveChangesAsync(
+        CancellationToken cancellationToken = default)
     {
         AddTimestamps();
         return base.SaveChangesAsync(cancellationToken);
     }
 
-    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    public override Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default)
     {
         AddTimestamps();
-        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        return base.SaveChangesAsync(
+            acceptAllChangesOnSuccess,
+            cancellationToken);
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -96,17 +153,24 @@ public class RLContext : DbContext
 
     private void AddTimestamps()
     {
-        var entities = ChangeTracker.Entries().Where(x => x.Entity is IChangeTrackable && (x.State == EntityState.Added || x.State == EntityState.Modified));
+        var entities = ChangeTracker.Entries()
+            .Where(x =>
+                x.Entity is IChangeTrackable &&
+                (x.State == EntityState.Added ||
+                 x.State == EntityState.Modified));
 
         foreach (var entity in entities)
         {
             if (entity.State == EntityState.Added)
             {
-                ((IChangeTrackable)entity.Entity).CreateDate = DateTime.UtcNow;
+                ((IChangeTrackable)entity.Entity).CreateDate =
+                    DateTime.UtcNow;
             }
 
-            ((IChangeTrackable)entity.Entity).UpdateDate = DateTime.UtcNow;
+            ((IChangeTrackable)entity.Entity).UpdateDate =
+                DateTime.UtcNow;
         }
     }
+
     #endregion
 }

@@ -1,64 +1,88 @@
-# OEC Interview - Fullstack React / .NET
+# OEC Repair Plan Assignment
 
-The objective of this assignment is to test your knowledge on some key technologies we use. 
+## Overview
 
-## How to prepare?
+This project is a Repair Plan Management application developed as part of the OEC technical assessment. It allows users to create a repair plan, add procedures, assign users to procedures, and manage user assignments.
 
-To start, read the [Installation.md](Installation.md). This will give you all the required downloads you will need to run the interview question.
+## Tech Stack
 
-## Start
+- **Frontend:** React
+- **Backend:** ASP.NET Core Web API (.NET 6)
+- **Database:** SQLite
+- **ORM:** Entity Framework Core
+- **API:** REST API
+- **Containerization:** Docker & Docker Compose
 
-To use docker to develop, run the following command from this folder:
+## Features
+
+- Start a new Repair Plan
+- Add procedures to a Repair Plan
+- Assign users to individual procedures
+- Assign multiple users to a procedure
+- Remove a single user assignment
+- Remove all users from a procedure
+- Persist user assignments in the database
+- Retain assignments after refreshing the page
+
+## Project Structure
+
+```text
+OEC-Repair-Plan-Assignment/
+├── Interview/
+│   ├── RL.Backend/
+│   └── RL.Data/
+├── interview-frontend/
+├── docs/
+├── docker-compose.yml
+└── README.md
 ```
-docker-compose up -d --build
+
+## Prerequisites
+
+- Docker Desktop
+- Git (optional, for cloning the repository)
+
+## Run the Application
+
+Clone the repository:
+
+```bash
+git clone YOUR_GITHUB_REPOSITORY_URL
 ```
 
-- Frontend will load on url `http://localhost:3001`
-- Backend will load on url `http://localhost:10010`
+Navigate to the project directory:
 
-## Additional Information
+```bash
+cd OEC-Repair-Plan-Assignment
+```
 
-For information outline the existing backend table structure, take a look at [DataModel.PNG](DataModel.PNG) in this folder
+Start the application:
 
-More information about the migrations: [migrations.md](./Interview/RL.Data/migrations.md)
+```bash
+docker compose up --build
+```
 
-# The Task
+## Application URLs
 
-## Introduction
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:3001 |
+| Backend Swagger | http://localhost:10010 |
 
-We have provided a working example of a website that can create a vehicle repair plan by adding individual repair procedures to an initial blank plan. The application displays a list of available procedures, and the user can decide and select those that he deems necessary to repair the vehicle. In addition, we can assign a person or several people to each procedure added to the plan (in this case: a mechanic, an employee of a repair facility, etc.). 
+## Stop the Application
 
-## Issue description / Bug report
+```bash
+docker compose down
+```
 
-Steps to reproduce:
+## Assignment Documentation
 
-1. Create a new `Plan`
-   - This happens when you click `Start` on the home page of the frontend project when it's running.
-   - List of procedures available for the plan load are loaded automatically when a plan is created. They will show up in `Procedures` list (left column of the Plan).
-1. Add 2 procedures to the `Plan`
-   - Procedures are added to a plan when you click a checkbox from the Procedures list on the left side of the plans component.
-   - After being added, the procedure checkbox will show up selected along with being added to the Added to Plan list on the right side of plans page
-1. Add users to the procedures
-   - Select and add 1 User to the first procedure and select and add 2 different Users to the second procedure in the plan
-   - User is added to the procedure by selecting it from the "Select User to Assign" drop-down menu below the procedure title.
-1.  Refresh the page
+Screenshot-based documentation and implementation steps are available in the `docs/` folder.
 
-Behavior:
+## Implementation
 
-- After refreshing the page, the “Select User to Assign” field is empty.
+User assignments are stored in the database. The application supports assigning multiple users to procedures, removing individual assignments, and clearing all assignments for a procedure.
 
-Expected behavior:
+## Author
 
-- After refreshing the page, the “Select User to Assign” field should display any previously added user.
-
-In addition to the above, implement functionality to:
-
--  **Remove Users:**
-Users assigned to a procedure should be able to be removed by the user from the procedure.
-- **Remove All Users:**
-Provide functionality to remove all users from a procedure at once.
-
-## Solution notes
-1. Create table structure to store the assigned users
-2. Create endpoint(s) to interact with new table structure
-3. Hook up endpoint(s) to the frontend so when a user is selected, they are correctly assigned to that procedure
+OEC Interview Assessment Submission
