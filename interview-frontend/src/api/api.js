@@ -1,139 +1,104 @@
 
 const api_url = "http://localhost:10010";
 
-// Create a new Repair Plan
-export const startPlan = async () => {
-    const url = `${api_url}/Plan`;
-
-    const response = await fetch(url, {
-        method: "POST",
+// Reusable API request helper
+const apiRequest = async (endpoint, options = {}, errorMessage) => {
+    const response = await fetch(`${api_url}${endpoint}`, {
+        ...options,
         headers: {
             Accept: "application/json",
-            "Content-Type": "application/json",
+            ...(options.body && { "Content-Type": "application/json" }),
+            ...options.headers,
         },
-        body: JSON.stringify({}),
     });
 
-    if (!response.ok) throw new Error("Failed to create plan");
+    if (!response.ok) {
+        throw new Error(errorMessage);
+    }
 
-    return await response.json();
+    // Handle responses without a body
+    if (response.status === 204) {
+        return null;
+    }
+
+    const contentType = response.headers.get("content-type");
+
+    if (contentType?.includes("application/json")) {
+        return response.json();
+    }
+
+    return null;
 };
+
+// Create a new Repair Plan
+export const startPlan = () =>
+    apiRequest(
+        "/Plan",
+        {
+            method: "POST",
+            body: JSON.stringify({}),
+        },
+        "Failed to create plan"
+    );
 
 // Add a procedure to a Repair Plan
-export const addProcedureToPlan = async (planId, procedureId) => {
-    const url = `${api_url}/Plan/AddProcedureToPlan`;
-
-    const command = {
-        planId: planId,
-        procedureId: procedureId,
-    };
-
-    const response = await fetch(url, {
-        method: "POST",
-        headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
+export const addProcedureToPlan = (planId, procedureId) =>
+    apiRequest(
+        "/Plan/AddProcedureToPlan",
+        {
+            method: "POST",
+            body: JSON.stringify({ planId, procedureId }),
         },
-        body: JSON.stringify(command),
-    });
-
-    if (!response.ok) throw new Error("Failed to add procedure to plan");
-
-    return true;
-};
+        "Failed to add procedure to plan"
+    ).then(() => true);
 
 // Get all procedures
-export const getProcedures = async () => {
-    const url = `${api_url}/Procedures`;
-
-    const response = await fetch(url, {
-        method: "GET",
-    });
-
-    if (!response.ok) throw new Error("Failed to get procedures");
-
-    return await response.json();
-};
+export const getProcedures = () =>
+    apiRequest("/Procedures", {}, "Failed to get procedures");
 
 // Get procedures added to a specific plan
-export const getPlanProcedures = async (planId) => {
-    const url = `${api_url}/PlanProcedure?$filter=planId eq ${planId}&$expand=procedure`;
-
-    const response = await fetch(url, {
-        method: "GET",
-    });
-
-    if (!response.ok) throw new Error("Failed to get plan procedures");
-
-    return await response.json();
-};
+export const getPlanProcedures = (planId) =>
+    apiRequest(
+        `/PlanProcedure?$filter=planId eq ${planId}&$expand=procedure`,
+        {},
+        "Failed to get plan procedures"
+    );
 
 // Get all users
-export const getUsers = async () => {
-    const url = `${api_url}/Users`;
-
-    const response = await fetch(url, {
-        method: "GET",
-    });
-
-    if (!response.ok) throw new Error("Failed to get users");
-
-    return await response.json();
-};
+export const getUsers = () =>
+    apiRequest("/Users", {}, "Failed to get users");
 
 // Get users assigned to a procedure
-export const getAssignedUsers = async (planId, procedureId) => {
-    const url = `${api_url}/PlanProcedure/${planId}/${procedureId}/users`;
-
-    const response = await fetch(url, {
-        method: "GET",
-    });
-
-    if (!response.ok) throw new Error("Failed to get assigned users");
-
-    return await response.json();
-};
+export const getAssignedUsers = (planId, procedureId) =>
+    apiRequest(
+        `/PlanProcedure/${planId}/${procedureId}/users`,
+        {},
+        "Failed to get assigned users"
+    );
 
 // Assign or update users for a procedure
-export const assignUsers = async (planId, procedureId, userIds) => {
-    const url = `${api_url}/PlanProcedure/${planId}/${procedureId}/users`;
-
-    const response = await fetch(url, {
-        method: "PUT",
-        headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
+export const assignUsers = (planId, procedureId, userIds) =>
+    apiRequest(
+        `/PlanProcedure/${planId}/${procedureId}/users`,
+        {
+            method: "PUT",
+            body: JSON.stringify(userIds),
         },
-        body: JSON.stringify(userIds),
-    });
-
-    if (!response.ok) throw new Error("Failed to assign users");
-
-    return await response.json();
-};
+        "Failed to assign users"
+    );
 
 // Remove one assigned user
-export const removeUser = async (planId, procedureId, userId) => {
-    const url = `${api_url}/PlanProcedure/${planId}/${procedureId}/users/${userId}`;
-
-    const response = await fetch(url, {
-        method: "DELETE",
-    });
-
-    if (!response.ok) throw new Error("Failed to remove user");
-
-    return await response.json();
-};
+export const removeUser = (planId, procedureId, userId) =>
+    apiRequest(
+        `/PlanProcedure/${planId}/${procedureId}/users/${userId}`,
+        { method: "DELETE" },
+        "Failed to remove user"
+    );
 
 // Remove all assigned users from a procedure
-export const removeAllUsers = async (planId, procedureId) => {
-    const url = `${api_url}/PlanProcedure/${planId}/${procedureId}/users`;
-
-    const response = await fetch(url, {
-        method: "DELETE",
-    });
-
-    if (!response.ok) throw new Error("Failed to remove all users");
-
-    return await response.json();
-};
+export const removeAllUsers = (planId, procedureId) =>
+    apiRequest(
+        `/PlanProcedure/${planId}/${procedureId}/users`,
+        { method: "DELETE" },
+        "Failed to remove all users"
+    );

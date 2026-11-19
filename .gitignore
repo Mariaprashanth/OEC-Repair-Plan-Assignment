@@ -15,3 +15,11 @@ Interview/RL.Data/obj/
 
 # Mac OS X
 .DS_Store
+
+# Visual Studio
+.vs/
+**/.vs/
+
+# User-specific files
+*.user
+*.suo
