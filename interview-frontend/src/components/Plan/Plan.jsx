@@ -29,24 +29,22 @@ const Plan = () => {
                 setLoading(true);
                 setError("");
 
-                const [
-                    proceduresData,
-                    planProceduresData,
-                    usersData,
-                ] = await Promise.all([
-                    getProcedures(),
-                    getPlanProcedures(id),
-                    getUsers(),
-                ]);
-
-                const userOptions = usersData.map((u) => ({
-                    label: u.name,
-                    value: u.userId,
-                }));
+                const [proceduresData, planProceduresData, usersData] =
+                    await Promise.all([
+                        getProcedures(),
+                        getPlanProcedures(id),
+                        getUsers(),
+                    ]);
 
                 setProcedures(proceduresData);
                 setPlanProcedures(planProceduresData);
-                setUsers(userOptions);
+
+                setUsers(
+                    usersData.map((user) => ({
+                        label: user.name,
+                        value: user.userId,
+                    }))
+                );
             } catch (err) {
                 console.error("Failed to load plan data:", err);
                 setError("Failed to load Repair Plan data.");
@@ -60,102 +58,96 @@ const Plan = () => {
 
     // Add procedure to plan
     const handleAddProcedureToPlan = async (procedure) => {
+        const alreadyAdded = planProcedures.some(
+            (p) => p.procedureId === procedure.procedureId
+        );
+
+        if (alreadyAdded) return;
+
         try {
-            const hasProcedureInPlan = planProcedures.some(
-                (p) => p.procedureId === procedure.procedureId
-            );
-
-            if (hasProcedureInPlan) return;
-
             await addProcedureToPlan(id, procedure.procedureId);
 
-            setPlanProcedures((prevState) => [
-                ...prevState,
-                {
-                    planId: Number(id),
-                    procedureId: procedure.procedureId,
-                    procedure: {
+            setPlanProcedures((previous) => {
+                const exists = previous.some(
+                    (p) => p.procedureId === procedure.procedureId
+                );
+
+                if (exists) return previous;
+
+                return [
+                    ...previous,
+                    {
+                        planId: Number(id),
                         procedureId: procedure.procedureId,
-                        procedureTitle: procedure.procedureTitle,
+                        procedure: {
+                            procedureId: procedure.procedureId,
+                            procedureTitle: procedure.procedureTitle,
+                        },
                     },
-                },
-            ]);
+                ];
+            });
         } catch (err) {
             console.error("Failed to add procedure:", err);
             alert("Failed to add procedure to plan.");
         }
     };
 
-    if (loading) {
-        return (
-            <Layout>
-                <div className="container pt-4">
-                    Loading Repair Plan...
-                </div>
-            </Layout>
-        );
-    }
-
-    if (error) {
-        return (
-            <Layout>
-                <div className="container pt-4">
-                    <div className="alert alert-danger">{error}</div>
-                </div>
-            </Layout>
-        );
-    }
-
     return (
         <Layout>
             <div className="container pt-4">
-                <div className="d-flex justify-content-center">
-                    <h2>OEC Interview Frontend</h2>
-                </div>
+                {loading ? (
+                    <p>Loading Repair Plan...</p>
+                ) : error ? (
+                    <div className="alert alert-danger" role="alert">
+                        {error}
+                    </div>
+                ) : (
+                    <>
+                        <div className="d-flex justify-content-center">
+                            <h2>OEC Interview Frontend</h2>
+                        </div>
 
-                <div className="row mt-4">
-                    <div className="col">
-                        <div className="card shadow">
-                            <h5 className="card-header">Repair Plan</h5>
+                        <div className="row mt-4">
+                            <div className="col">
+                                <div className="card shadow">
+                                    <h5 className="card-header">Repair Plan</h5>
 
-                            <div className="card-body">
-                                <div className="row">
-                                    <div className="col">
-                                        <h4>Procedures</h4>
+                                    <div className="card-body">
+                                        <div className="row">
+                                            <div className="col">
+                                                <h4>Procedures</h4>
 
-                                        <div>
-                                            {procedures.map((p) => (
-                                                <ProcedureItem
-                                                    key={p.procedureId}
-                                                    procedure={p}
-                                                    handleAddProcedureToPlan={
-                                                        handleAddProcedureToPlan
-                                                    }
-                                                    planProcedures={planProcedures}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
+                                                {procedures.map((procedure) => (
+                                                    <ProcedureItem
+                                                        key={procedure.procedureId}
+                                                        procedure={procedure}
+                                                        handleAddProcedureToPlan={
+                                                            handleAddProcedureToPlan
+                                                        }
+                                                        planProcedures={planProcedures}
+                                                    />
+                                                ))}
+                                            </div>
 
-                                    <div className="col">
-                                        <h4>Added to Plan</h4>
+                                            <div className="col">
+                                                <h4>Added to Plan</h4>
 
-                                        <div>
-                                            {planProcedures.map((p) => (
-                                                <PlanProcedureItem
-                                                    key={p.procedure.procedureId}
-                                                    planId={id}
-                                                    procedure={p.procedure}
-                                                    users={users}
-                                                />
-                                            ))}
+                                                {planProcedures.map((item) => (
+                                                    <PlanProcedureItem
+                                                        key={item.procedure.procedureId}
+                                                        planId={id}
+                                                        procedure={item.procedure}
+                                                        users={users}
+                                                    />
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    </>
+                )}
             </div>
         </Layout>
     );

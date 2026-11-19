@@ -25,12 +25,12 @@ const PlanProcedureItem = ({ planId, procedure, users }) => {
                     procedure.procedureId
                 );
 
-                const selected = assignedUsers.map((u) => ({
-                    label: u.name,
-                    value: u.userId,
-                }));
-
-                setSelectedUsers(selected);
+                setSelectedUsers(
+                    assignedUsers.map((user) => ({
+                        label: user.name,
+                        value: user.userId,
+                    }))
+                );
             } catch (error) {
                 console.error("Failed to load assigned users:", error);
                 alert("Failed to load assigned users.");
@@ -42,71 +42,68 @@ const PlanProcedureItem = ({ planId, procedure, users }) => {
         loadAssignedUsers();
     }, [planId, procedure.procedureId]);
 
-    // Assign or update users
-    const handleAssignUserToProcedure = async (selectedOptions) => {
-        const updatedUsers = selectedOptions || [];
-
+    // Reusable save handler
+    const performSave = async (action, errorMessage) => {
         try {
             setSaving(true);
-
-            const userIds = updatedUsers.map((u) => u.value);
-
-            await assignUsers(
-                planId,
-                procedure.procedureId,
-                userIds
-            );
-
-            setSelectedUsers(updatedUsers);
+            await action();
         } catch (error) {
-            console.error("Failed to assign users:", error);
-            alert("Failed to save user assignments.");
+            console.error(errorMessage, error);
+            alert(errorMessage);
         } finally {
             setSaving(false);
         }
     };
 
+    // Assign or update users
+    const handleAssignUserToProcedure = async (selectedOptions) => {
+        const updatedUsers = selectedOptions || [];
+
+        await performSave(
+            async () => {
+                const userIds = updatedUsers.map((user) => user.value);
+
+                await assignUsers(
+                    planId,
+                    procedure.procedureId,
+                    userIds
+                );
+
+                setSelectedUsers(updatedUsers);
+            },
+            "Failed to save user assignments."
+        );
+    };
+
     // Remove one user
     const handleRemoveUser = async (userId) => {
-        try {
-            setSaving(true);
+        await performSave(
+            async () => {
+                await removeUser(
+                    planId,
+                    procedure.procedureId,
+                    userId
+                );
 
-            await removeUser(
-                planId,
-                procedure.procedureId,
-                userId
-            );
-
-            setSelectedUsers((prev) =>
-                prev.filter((u) => u.value !== userId)
-            );
-        } catch (error) {
-            console.error("Failed to remove user:", error);
-            alert("Failed to remove user.");
-        } finally {
-            setSaving(false);
-        }
+                setSelectedUsers((previous) =>
+                    previous.filter((user) => user.value !== userId)
+                );
+            },
+            "Failed to remove user."
+        );
     };
 
     // Remove all users
     const handleRemoveAllUsers = async () => {
         if (selectedUsers.length === 0) return;
 
-        try {
-            setSaving(true);
-
-            await removeAllUsers(
-                planId,
-                procedure.procedureId
-            );
-
-            setSelectedUsers([]);
-        } catch (error) {
-            console.error("Failed to remove all users:", error);
-            alert("Failed to remove all users.");
-        } finally {
-            setSaving(false);
-        }
+        await performSave(
+            async () => {
+                await removeAllUsers(planId, procedure.procedureId);
+                setSelectedUsers([]);
+            },
+            "Failed to remove all users."
+        );
     };
 
     return (
@@ -118,7 +115,7 @@ const PlanProcedureItem = ({ planId, procedure, users }) => {
             <ReactSelect
                 className="mt-2"
                 placeholder="Select User to Assign"
-                isMulti={true}
+                isMulti
                 options={users}
                 value={selectedUsers}
                 onChange={handleAssignUserToProcedure}
@@ -159,9 +156,7 @@ const PlanProcedureItem = ({ planId, procedure, users }) => {
                             <button
                                 type="button"
                                 className="btn btn-sm btn-outline-danger"
-                                onClick={() =>
-                                    handleRemoveUser(user.value)
-                                }
+                                onClick={() => handleRemoveUser(user.value)}
                                 disabled={saving}
                             >
                                 Remove
